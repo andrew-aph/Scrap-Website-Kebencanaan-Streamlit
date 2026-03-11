@@ -5,6 +5,8 @@ import csv
 import time
 import pandas as pd
 
+st.set_page_config(layout="wide")
+
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 # =====================================================
@@ -113,7 +115,6 @@ def scrape_detik(keywords, num_pages):
                     if content_section:
                         paragraphs = content_section.find_all("p")
                         content = " ".join(p.text.strip() for p in paragraphs)
-
                         content = content.replace("SCROLL TO CONTINUE WITH CONTENT", "")
 
                     tag_section = news_soup.find("div", class_="nav")
@@ -388,9 +389,26 @@ if run:
 
         st.success("Scraping selesai")
 
-        st.write("### Hasil Data")
+        st.subheader("Hasil Data Scraping")
 
-        st.dataframe(final_df, use_container_width=True)
+        st.dataframe(
+            final_df,
+            use_container_width=True
+        )
+
+        st.subheader("Detail Isi Berita")
+
+        for i, row in final_df.iterrows():
+
+            with st.expander(row["Judul"]):
+
+                st.write("Tanggal :", row["Tanggal"])
+                st.write("Website :", row["Website"])
+                st.write("Tag :", row["Tag"])
+                st.write("Link :", row["Link"])
+
+                st.write("Isi Berita :")
+                st.write(row["Isi Berita"])
 
         csv = final_df.to_csv(index=False, sep=";").encode("utf-8")
 
@@ -400,3 +418,4 @@ if run:
             "hasil_scraping_semua_website.csv",
             "text/csv"
         )
+        
