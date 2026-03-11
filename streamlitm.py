@@ -396,6 +396,13 @@ if run:
             use_container_width=True
         )
 
+        st.download_button(
+            "Download CSV",
+            csv,
+            "hasil_scraping_semua_website.csv",
+            "text/csv"
+        )
+
         st.subheader("Detail Isi Berita")
 
         for i, row in final_df.iterrows():
@@ -411,11 +418,4 @@ if run:
                 st.write(row["Isi Berita"])
 
         csv = final_df.to_csv(index=False, sep=";").encode("utf-8")
-
-        st.download_button(
-            "Download CSV",
-            csv,
-            "hasil_scraping_semua_website.csv",
-            "text/csv"
-        )
         
