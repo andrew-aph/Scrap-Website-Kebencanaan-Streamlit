@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import csv
 import time
 import pandas as pd
 import re
@@ -17,39 +16,28 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 def normalize_date(date_str):
 
     bulan_map = {
-        "Jan": "Januari","Feb": "Februari","Mar": "Maret","Apr": "April",
-        "May": "Mei","Jun": "Juni","Jul": "Juli","Aug": "Agustus",
-        "Sep": "September","Oct": "Oktober","Nov": "November","Dec": "Desember",
-        "January": "Januari","February": "Februari","March": "Maret","April": "April",
-        "June": "Juni","July": "Juli","August": "Agustus","September": "September",
-        "October": "Oktober","November": "November","December": "Desember"
+        "Jan":"Januari","Feb":"Februari","Mar":"Maret","Apr":"April",
+        "May":"Mei","Jun":"Juni","Jul":"Juli","Aug":"Agustus",
+        "Sep":"September","Oct":"Oktober","Nov":"November","Dec":"Desember",
+        "January":"Januari","February":"Februari","March":"Maret",
+        "June":"Juni","July":"Juli","August":"Agustus",
+        "October":"Oktober","December":"Desember"
     }
 
     try:
-        date_str = date_str.replace("WIB", "").strip()
+
+        date_str=date_str.replace("WIB","").strip()
 
         if "," in date_str:
-            date_str = date_str.split(",")[1].strip()
-            parts = date_str.split()
+            date_str=date_str.split(",")[1].strip()
 
-            day = parts[0]
-            month = bulan_map.get(parts[1], parts[1])
-            year = parts[2]
+        parts=date_str.split()
 
-            return f"{day} {month} {year}"
+        day=parts[0]
+        month=bulan_map.get(parts[1],parts[1])
+        year=parts[2]
 
-        elif re.search(r"\d{4}", date_str):
-
-            parts = date_str.split()
-
-            day = parts[0]
-            month = bulan_map.get(parts[1], parts[1])
-            year = parts[2]
-
-            return f"{day} {month} {year}"
-
-        else:
-            return date_str
+        return f"{day} {month} {year}"
 
     except:
         return date_str
@@ -59,58 +47,35 @@ def normalize_date(date_str):
 # KONVERSI KE DATETIME
 # =====================================================
 
-def convert_to_datetime(df):
+def parse_date_to_datetime(date_str):
 
-    bulan_map = {
+    bulan_map={
         "Januari":"01","Februari":"02","Maret":"03","April":"04",
         "Mei":"05","Juni":"06","Juli":"07","Agustus":"08",
         "September":"09","Oktober":"10","November":"11","Desember":"12"
     }
 
-    def parse_date(date_str):
-        try:
-            parts = date_str.split()
+    try:
 
-            day = parts[0]
-            month = bulan_map.get(parts[1], "01")
-            year = parts[2]
+        parts=date_str.split()
 
-            return pd.to_datetime(f"{year}-{month}-{day}")
+        day=parts[0]
+        month=bulan_map.get(parts[1],"01")
+        year=parts[2]
 
-        except:
-            return pd.NaT
+        return pd.to_datetime(f"{year}-{month}-{day}")
 
-    df["Tanggal_dt"] = df["Tanggal"].apply(parse_date)
-
-    return df
-
-
-# =====================================================
-# SAVE CSV
-# =====================================================
-
-def save_to_csv(data, filename):
-
-    with open(filename,"w",newline="",encoding="utf-8") as f:
-
-        writer = csv.writer(f,delimiter=";")
-
-        writer.writerow(["No","Judul","Tanggal","Link","Tag","Isi Berita"])
-
-        writer.writerows(data)
-
-    return filename
+    except:
+        return None
 
 
 # =====================================================
 # FILTER KEBENCANAAN
 # =====================================================
 
-def filter_kebencanaan(filename):
+def filter_kebencanaan(df):
 
-    df = pd.read_csv(filename,delimiter=";",encoding="utf-8")
-
-    df_filtered = df[
+    df=df[
         df['Tag'].str.contains(
             'bencana|banjir|puting beliung|gelombang pasang|abrasi|longsor|kekeringan|gempa|gunung meletus|erupsi|kebakaran hutan',
             case=False,
@@ -118,216 +83,222 @@ def filter_kebencanaan(filename):
         )
     ]
 
-    return df_filtered
+    return df
 
 
 # =====================================================
 # SCRAPER DETIK
 # =====================================================
 
-def scrape_detik(keywords, num_pages):
+def scrape_detik(keywords,start_date,end_date):
 
-    data_list=[]
-    seen_titles=set()
-    index=1
+    data=[]
+    seen=set()
 
     for keyword in keywords:
 
-        base_url=f"https://www.detik.com/search/searchnews?query={keyword}&sortby=time&page={{}}"
+        page=1
+        stop=False
 
-        for page in range(1,num_pages+1):
+        while not stop:
 
-            url=base_url.format(page)
+            url=f"https://www.detik.com/search/searchnews?query={keyword}&sortby=time&page={page}"
 
-            response=requests.get(url,headers=HEADERS)
-
-            soup=BeautifulSoup(response.text,"html.parser")
+            r=requests.get(url,headers=HEADERS)
+            soup=BeautifulSoup(r.text,"html.parser")
 
             articles=soup.find_all("article")
+
+            if len(articles)==0:
+                break
 
             for article in articles:
 
                 try:
 
-                    link_tag=article.find("a")
-                    title_tag=article.find("h3")
+                    link=article.find("a")["href"]
+                    title=article.find("h3").text.strip()
 
-                    if not link_tag or not title_tag:
+                    if title in seen:
                         continue
 
-                    link=link_tag["href"]
-                    headline=title_tag.text.strip()
-
-                    if headline in seen_titles:
-                        continue
-
-                    seen_titles.add(headline)
+                    seen.add(title)
 
                     news=requests.get(link,headers=HEADERS)
-                    news_soup=BeautifulSoup(news.text,"html.parser")
+                    ns=BeautifulSoup(news.text,"html.parser")
 
-                    date_elem=news_soup.find("div",class_="detail__date")
+                    date_elem=ns.find("div",class_="detail__date")
                     date=date_elem.text.strip() if date_elem else ""
-                    date=normalize_date(date)
 
-                    content_section=news_soup.find("div",class_="detail__body-text")
+                    date=normalize_date(date)
+                    date_dt=parse_date_to_datetime(date)
+
+                    if date_dt is None:
+                        continue
+
+                    if date_dt < pd.to_datetime(start_date):
+                        stop=True
+                        break
+
+                    if not(pd.to_datetime(start_date)<=date_dt<=pd.to_datetime(end_date)):
+                        continue
 
                     content=""
-                    if content_section:
-                        paragraphs=content_section.find_all("p")
-                        content=" ".join(p.text.strip() for p in paragraphs)
+                    section=ns.find("div",class_="detail__body-text itp_bodycontent")
 
-                    tag_section=news_soup.find("div",class_="nav")
+                    if section:
+                        content=" ".join(p.text.strip() for p in section.find_all("p"))
+                        content = content.replace("SCROLL TO CONTINUE WITH CONTENT", "")
 
                     tags=""
+                    tag_section=ns.find("div",class_="nav")
+
                     if tag_section:
-                        tag_items=tag_section.find_all("a",class_="nav__item")
-                        tag_list=[tag.text.strip() for tag in tag_items]
-                        tags=", ".join(tag_list)
+                        tags=", ".join(t.text.strip() for t in tag_section.find_all("a"))
 
-                    data_list.append([index,headline,date,link,tags,content])
-
-                    index+=1
+                    data.append([title,date,link,tags,content])
 
                 except:
                     pass
 
-    filename="detik_news.csv"
-    save_to_csv(data_list,filename)
+            page+=1
 
-    return filter_kebencanaan(filename)
+    df=pd.DataFrame(data,columns=["Judul","Tanggal","Link","Tag","Isi Berita"])
+
+    return filter_kebencanaan(df)
 
 
 # =====================================================
 # SCRAPER KOMPAS
 # =====================================================
 
-def scrape_kompas(keywords,num_pages):
+def scrape_kompas(keywords,start_date,end_date):
 
-    data_list=[]
-    seen_titles=set()
-    index=1
+    data=[]
+    seen=set()
 
     for keyword in keywords:
 
-        base_url=f"https://search.kompas.com/search?q={keyword}&sort=latest&page={{}}"
+        page=1
+        stop=False
 
-        for page in range(1,num_pages+1):
+        while not stop:
 
-            url=base_url.format(page)
+            url=f"https://search.kompas.com/search?q={keyword}&sort=latest&page={page}"
 
-            response=requests.get(url,headers=HEADERS)
-
-            soup=BeautifulSoup(response.text,"html.parser")
+            r=requests.get(url,headers=HEADERS)
+            soup=BeautifulSoup(r.text,"html.parser")
 
             articles=soup.find_all("div",class_="articleItem")
+
+            if len(articles)==0:
+                break
 
             for article in articles:
 
                 try:
 
-                    title_tag=article.find("h2",class_="articleTitle")
-                    link_tag=article.find("a")
+                    title=article.find("h2",class_="articleTitle").text.strip()
+                    link=article.find("a",class_="article-link")["href"]
 
-                    if not title_tag or not link_tag:
+                    if title in seen:
                         continue
 
-                    headline=title_tag.text.strip()
-                    link=link_tag["href"]
+                    seen.add(title)
 
-                    if headline in seen_titles:
-                        continue
+                    date=article.find("div",class_="articlePost-date").text.strip()
 
-                    seen_titles.add(headline)
-
-                    date_tag=article.find("div",class_="articlePost-date")
-                    date=date_tag.text.strip() if date_tag else ""
                     date=normalize_date(date)
+                    date_dt=parse_date_to_datetime(date)
+
+                    if date_dt is None:
+                        continue
+
+                    if date_dt < pd.to_datetime(start_date):
+                        stop=True
+                        break
+
+                    if not(pd.to_datetime(start_date)<=date_dt<=pd.to_datetime(end_date)):
+                        continue
 
                     news=requests.get(link,headers=HEADERS)
-                    news_soup=BeautifulSoup(news.text,"html.parser")
-
-                    content_section=news_soup.find("div",class_="read__content")
+                    ns=BeautifulSoup(news.text,"html.parser")
 
                     content=""
-                    if content_section:
-                        paragraphs=content_section.find_all("p")
-                        content=" ".join(p.text.strip() for p in paragraphs)
+                    section=ns.find("div",class_="read__content")
 
-                    tag_section=news_soup.find("div",class_="tagsCloud-tag")
+                    if section:
+                        content=" ".join(p.text.strip() for p in section.find_all("p"))
 
                     tags=""
+                    tag_section=ns.find("div",class_="tagsCloud-tag")
+
                     if tag_section:
-                        tag_items=tag_section.find_all("a")
-                        tag_list=[tag.text.strip() for tag in tag_items]
-                        tags=", ".join(tag_list)
+                        tags=", ".join(t.text.strip() for t in tag_section.find_all("a"))
 
-                    data_list.append([index,headline,date,link,tags,content])
+                    data.append([title,date,link,tags,content])
 
-                    index+=1
                     time.sleep(1)
 
                 except:
                     pass
 
-    filename="kompas_news.csv"
-    save_to_csv(data_list,filename)
+            page+=1
 
-    return filter_kebencanaan(filename)
+    df=pd.DataFrame(data,columns=["Judul","Tanggal","Link","Tag","Isi Berita"])
+
+    return filter_kebencanaan(df)
 
 
 # =====================================================
 # SCRAPER METROTV
 # =====================================================
 
-def scrape_metrotv(keywords,num_pages):
+def scrape_metrotv(keywords,start_date,end_date):
 
-    data_list=[]
-    seen_titles=set()
-    index=1
+    data=[]
+    seen=set()
 
     for keyword in keywords:
 
-        base_url=f"https://www.metrotvnews.com/search?query={keyword}&page={{}}"
+        page=0
+        stop=False
 
-        for page in range(1,num_pages+1):
+        while not stop:
 
-            url=base_url.format(page)
+            url=f"https://www.metrotvnews.com/search?query={keyword}&page={page}"
 
-            response=requests.get(url,headers=HEADERS)
-
-            soup=BeautifulSoup(response.text,"html.parser")
+            r=requests.get(url,headers=HEADERS)
+            soup=BeautifulSoup(r.text,"html.parser")
 
             articles=soup.find_all("div",class_="item")
+
+            if len(articles)==0:
+                break
 
             for article in articles:
 
                 try:
 
-                    link_tag=article.find("a")
-                    title_tag=article.find("h3")
-
-                    if not link_tag or not title_tag:
-                        continue
-
-                    link=link_tag["href"]
-                    title=title_tag.text.strip()
+                    link=article.find("a")["href"]
+                    title=article.find("h3").text.strip()
 
                     if link.startswith("/"):
                         link="https://www.metrotvnews.com"+link
 
-                    if title in seen_titles:
+                    if title in seen:
                         continue
 
-                    seen_titles.add(title)
+                    seen.add(title)
 
                     news=requests.get(link,headers=HEADERS)
-                    news_soup=BeautifulSoup(news.text,"html.parser")
+                    ns=BeautifulSoup(news.text,"html.parser")
 
                     date=""
-                    date_tags=news_soup.select("p.date")
+                    date_tags=ns.select("p.date")
 
                     for tag in date_tags:
+
                         text=tag.get_text(strip=True)
 
                         if "•" in text:
@@ -336,38 +307,48 @@ def scrape_metrotv(keywords,num_pages):
                             date=text
 
                     date=normalize_date(date)
+                    date_dt=parse_date_to_datetime(date)
 
-                    content_section=news_soup.find("div",class_="news-text")
+                    if date_dt is None:
+                        continue
+
+                    if date_dt < pd.to_datetime(start_date):
+                        stop=True
+                        break
+
+                    if not(pd.to_datetime(start_date)<=date_dt<=pd.to_datetime(end_date)):
+                        continue
 
                     content=""
-                    if content_section:
-                        paragraphs=content_section.find_all("p")
-                        content=" ".join(p.text.strip() for p in paragraphs)
+                    section=ns.find("div",class_="news-text")
 
-                    tag_section=news_soup.find("div",class_="tag-content")
+                    if section:
+                        for read in section.find_all("div", class_="readother"):
+                            read.decompose()
+                        content=" ".join(p.text.strip() for p in section.find_all("p"))
 
                     tags=""
+                    tag_section=ns.find("div",class_="tag-content")
+
                     if tag_section:
-                        tag_items=tag_section.find_all("a")
-                        tag_list=[tag.text.strip() for tag in tag_items]
-                        tags=", ".join(tag_list)
+                        tags=", ".join(t.text.strip() for t in tag_section.find_all("a"))
 
-                    data_list.append([index,title,date,link,tags,content])
+                    data.append([title,date,link,tags,content])
 
-                    index+=1
                     time.sleep(1)
 
                 except:
                     pass
 
-    filename="metrotv_news.csv"
-    save_to_csv(data_list,filename)
+            page+=1
 
-    return filter_kebencanaan(filename)
+    df=pd.DataFrame(data,columns=["Judul","Tanggal","Link","Tag","Isi Berita"])
+
+    return filter_kebencanaan(df)
 
 
 # =====================================================
-# STREAMLIT DASHBOARD
+# DASHBOARD
 # =====================================================
 
 st.title("🌍 Dashboard Scraping Berita Kebencanaan")
@@ -388,18 +369,14 @@ keywords=st.sidebar.multiselect(
     ]
 )
 
-pages=st.sidebar.number_input(
-    "Jumlah halaman scraping",
-    min_value=1,
-    max_value=20,
-    value=1
-)
+start_date=st.sidebar.date_input("Tanggal Mulai")
+end_date=st.sidebar.date_input("Tanggal Akhir")
 
 run=st.sidebar.button("Mulai Scraping")
 
 
 # =====================================================
-# PROSES SCRAPING
+# RUN SCRAPER
 # =====================================================
 
 if run:
@@ -413,13 +390,13 @@ if run:
             st.write(f"Scraping {site}")
 
             if site=="Detik":
-                df=scrape_detik(keywords,pages)
+                df=scrape_detik(keywords,start_date,end_date)
 
             elif site=="Kompas":
-                df=scrape_kompas(keywords,pages)
+                df=scrape_kompas(keywords,start_date,end_date)
 
             elif site=="MetroTV":
-                df=scrape_metrotv(keywords,pages)
+                df=scrape_metrotv(keywords,start_date,end_date)
 
             df["Website"]=site
 
@@ -427,9 +404,17 @@ if run:
 
     final_df=pd.concat(all_df,ignore_index=True)
 
-    final_df=convert_to_datetime(final_df)
+    final_df["Tanggal_dt"]=final_df["Tanggal"].apply(parse_date_to_datetime)
 
-    final_df=final_df.sort_values(by="Tanggal_dt",ascending=False)
+    final_df=final_df.sort_values("Tanggal_dt",ascending=False)
+
+    final_df=final_df.reset_index(drop=True)
+
+    final_df["No"]=final_df.index+1
+
+    final_df=final_df[
+        ["No","Judul","Tanggal","Website","Tag","Link","Isi Berita"]
+    ]
 
     st.session_state["data_scraping"]=final_df
 
@@ -442,55 +427,24 @@ if "data_scraping" in st.session_state:
 
     final_df=st.session_state["data_scraping"]
 
-    st.success("Scraping selesai")
-
-    st.subheader("Filter Data Berdasarkan Tanggal")
-
-    col1,col2=st.columns(2)
-
-    with col1:
-        start_date=st.date_input(
-            "Tanggal Mulai",
-            value=final_df["Tanggal_dt"].min()
-        )
-
-    with col2:
-        end_date=st.date_input(
-            "Tanggal Akhir",
-            value=final_df["Tanggal_dt"].max()
-        )
-
-    filtered_df=final_df[
-        (final_df["Tanggal_dt"]>=pd.to_datetime(start_date)) &
-        (final_df["Tanggal_dt"]<=pd.to_datetime(end_date))
-    ]
-
-    filtered_df=filtered_df.sort_values(by="Tanggal_dt",ascending=False)
-
-    filtered_df=filtered_df.reset_index(drop=True)
-
-    filtered_df["No"]=filtered_df.index+1
-
-    filtered_df=filtered_df.drop(columns=["Tanggal_dt"])
-
     tab1,tab2=st.tabs(["📄 Data","📖 Detail Berita"])
 
     with tab1:
 
-        st.dataframe(filtered_df,use_container_width=True)
+        st.dataframe(final_df,use_container_width=True)
 
-        csv=filtered_df.to_csv(index=False,sep=";").encode("utf-8")
+        csv=final_df.to_csv(index=False,sep=";").encode("utf-8")
 
         st.download_button(
             "Download CSV",
             csv,
-            "hasil_scraping_semua_website.csv",
+            "hasil_scraping_berita.csv",
             "text/csv"
         )
 
     with tab2:
 
-        for i,row in filtered_df.iterrows():
+        for i,row in final_df.iterrows():
 
             with st.expander(row["Judul"]):
 
@@ -498,6 +452,5 @@ if "data_scraping" in st.session_state:
                 st.write("Website :",row["Website"])
                 st.write("Tag :",row["Tag"])
                 st.write("Link :",row["Link"])
-
                 st.write("Isi Berita :")
                 st.write(row["Isi Berita"])
