@@ -16,72 +16,76 @@ st.set_page_config(
 )
 
 # =====================================================
-# AUTO THEME (FOLLOW SYSTEM)
+# SYSTEM THEME (AUTO LIGHT / DARK)
 # =====================================================
 
 st.markdown("""
 <style>
 
-/* DEFAULT (LIGHT MODE) */
+/* Warna dasar mengikuti sistem */
 .stApp{
-    background-color:#ffffff;
+background-color:transparent;
 }
 
+/* Text default */
 .main h1,.main h2,.main h3,.main p,.main span,.main label,.main div{
-    color:#1a202c !important;
+color:inherit;
 }
 
-[data-testid="stMetric"]{
-    background:#f7fafc;
-    border:1px solid #e2e8f0;
-    padding:20px;
-    border-radius:10px;
-}
-
-.stDataFrame thead tr th{
-    background:#edf2f7 !important;
-}
-
-/* DARK MODE (AUTO DETECT SYSTEM) */
-@media (prefers-color-scheme: dark){
-
-    .stApp{
-        background-color:#1a1c23;
-    }
-
-    .main h1,.main h2,.main h3,.main p,.main span,.main label,.main div{
-        color:#e2e8f0 !important;
-    }
-
-    [data-testid="stMetric"]{
-        background:#2d3748;
-        border:1px solid #4a5568;
-    }
-
-    .stDataFrame thead tr th{
-        background:#2d3748 !important;
-    }
-
-}
-
-/* BUTTON STYLE (NETRAL UNTUK LIGHT & DARK) */
-
+/* Button */
 div.stButton > button,
 div.stDownloadButton > button,
 div.stLinkButton > a{
-    background-color:#38a169 !important;
-    color:white !important;
-    border-radius:6px !important;
-    border:none !important;
+background-color:#38a169;
+color:white;
+border-radius:8px;
+border:none;
 }
 
 div.stButton > button:hover,
 div.stDownloadButton > button:hover{
-    background-color:#48bb78 !important;
+background-color:#48bb78;
+}
+
+/* METRIC CARD */
+[data-testid="stMetric"]{
+border-radius:12px;
+padding:20px;
+border:1px solid rgba(0,0,0,0.1);
+}
+
+/* DARK MODE STYLE */
+@media (prefers-color-scheme: dark){
+
+[data-testid="stMetric"]{
+background:#1f2937;
+border:1px solid #374151;
+}
+
+.stDataFrame thead tr th{
+background:#1f2937 !important;
+}
+
+}
+
+/* LIGHT MODE STYLE */
+@media (prefers-color-scheme: light){
+
+[data-testid="stMetric"]{
+background:#f9fafb;
+border:1px solid #e5e7eb;
+}
+
+.stDataFrame thead tr th{
+background:#f3f4f6 !important;
+}
+
 }
 
 </style>
 """, unsafe_allow_html=True)
+
+HEADERS={"User-Agent":"Mozilla/5.0"}
 
 # =====================================================
 # NORMALISASI TANGGAL
