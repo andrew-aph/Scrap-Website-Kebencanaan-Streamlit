@@ -103,72 +103,6 @@ Project ini dibangun menggunakan:
 
 ---
 
-# 📦 Instalasi
-
-Clone repository:
-
-```bash
-git clone https://github.com/username/berita-kebencanaan-dashboard.git
-cd berita-kebencanaan-dashboard
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Contoh isi `requirements.txt`:
-
-```txt
-streamlit
-requests
-beautifulsoup4
-pandas
-lxml
-```
-
----
-
-# ▶️ Menjalankan Aplikasi
-
-Jalankan Streamlit:
-
-```bash
-streamlit run app.py
-```
-
-Kemudian buka di browser:
-
-```
-http://localhost:8501
-```
-
----
-
-# 📂 Struktur Project
-
-```
-berita-kebencanaan-dashboard
-│
-├── app.py
-├── scraper.py
-├── requirements.txt
-│
-├── data
-│   └── berita.csv
-│
-├── images
-│   └── logo.png
-│
-└── docs
-    ├── dashboard_dataset.png
-    ├── dashboard_detail.png
-    └── dashboard_bencana.png
-```
-
----
-
 # ⚙️ Cara Kerja Sistem
 
 1. User memilih:
@@ -191,15 +125,6 @@ berita-kebencanaan-dashboard
 
 ---
 
-# 📊 Contoh Output Dataset
-
-| No | Judul | Tanggal | Website | Tag |
-|----|------|------|------|------|
-| 1 | Banjir Rendam Bekasi | 15 April 2026 | Detik | banjir, bekasi |
-| 2 | Gempa M4.5 Guncang Sumba | 12 April 2026 | Kompas | gempa, sumba |
-
----
-
 # 📌 Use Case
 
 Dashboard ini dapat digunakan untuk:
@@ -207,7 +132,6 @@ Dashboard ini dapat digunakan untuk:
 - Monitoring berita kebencanaan
 - Analisis kejadian bencana berbasis berita
 - Early information monitoring
-- Pengumpulan dataset penelitian
 
 ---
 
@@ -215,7 +139,6 @@ Dashboard ini dapat digunakan untuk:
 
 Data diperoleh dari hasil scraping portal berita dan hanya digunakan untuk tujuan:
 
-- penelitian
 - analisis data
 - monitoring informasi publik
 
@@ -223,4 +146,4 @@ Data diperoleh dari hasil scraping portal berita dan hanya digunakan untuk tujua
 
 # 👨‍💻 Author
 
-Developed by **Andrew Putra**
+Developed by **Andrew Putra Hartanto**
