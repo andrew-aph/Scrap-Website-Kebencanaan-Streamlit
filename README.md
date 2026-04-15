@@ -112,9 +112,9 @@ Project ini dibangun menggunakan:
 # ⚙️ Cara Kerja Sistem
 
 1. User memilih:
-   - sumber berita
-   - keyword
-   - rentang tanggal
+   - Sumber berita
+   - Keyword
+   - Rentang tanggal
 
 2. Sistem melakukan scraping berita dari website.
 
@@ -145,8 +145,8 @@ Dashboard ini dapat digunakan untuk:
 
 Data diperoleh dari hasil scraping portal berita dan hanya digunakan untuk tujuan:
 
-- analisis data
-- monitoring informasi publik
+- Analisis data
+- Monitoring informasi publik
 
 ---
 
